@@ -1,9 +1,11 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import QRCode from 'qrcode';
+import { Plus, Search, QrCode, ScanFace, Pencil, Trash2, Printer, ArrowLeft, Power, X, ShieldOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import FaceEnroll from '@/components/FaceEnroll';
 import { useProfile } from '@/lib/profile';
+import { PageHead, Avatar } from '@/components/ui';
 
 const EMPTY = { id: '', nis: '', full_name: '', class_id: '', parent_name: '', parent_phone: '', parent_email: '' };
 
@@ -80,10 +82,10 @@ export default function StudentsPage() {
   if (cards)
     return (
       <>
-        <div className="actions no-print" style={{ marginBottom: 14 }}>
-          <button onClick={() => window.print()}>Cetak kartu</button>
-          <button className="ghost" onClick={() => setCards(null)}>Kembali</button>
-        </div>
+        <PageHead title="Kartu QR Siswa" sub={`${cards.length} kartu siap dicetak`}>
+          <button onClick={() => window.print()}><Printer size={16} /> Cetak kartu</button>
+          <button className="ghost" onClick={() => setCards(null)}><ArrowLeft size={16} /> Kembali</button>
+        </PageHead>
         <div className="qr-sheet">
           {cards.map(({ s, img }) => (
             <div className="qr-card" key={s.id}>
@@ -96,60 +98,71 @@ export default function StudentsPage() {
       </>
     );
 
+  const activeCount = filtered.filter((s) => s.active).length;
+
   return (
     <>
-      <h2>Data Siswa</h2>
+      <PageHead title="Data Siswa" sub={`${students.length} siswa terdaftar`}>
+        {isAdmin && <button onClick={() => { setMsg(''); setForm({ ...EMPTY }); }}><Plus size={16} /> Tambah siswa</button>}
+        <button className="ghost" onClick={() => makeCards(filtered.filter((s) => s.active))} disabled={!activeCount}><QrCode size={16} /> Cetak kartu QR ({activeCount})</button>
+      </PageHead>
+
       <div className="card">
-        <div className="row">
-          <div><label>Cari nama / NIS</label><input value={q} onChange={(e) => setQ(e.target.value)} /></div>
-          <div>
-            <label>Kelas</label>
-            <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
-              <option value="">Semua kelas</option>
-              {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+        <div className="row" style={{ marginBottom: 0 }}>
+          <div className="input-icon">
+            <Search size={17} />
+            <input placeholder="Cari nama atau NIS…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-        </div>
-        <div className="actions">
-          {isAdmin && <button onClick={() => { setMsg(''); setForm({ ...EMPTY }); }}>+ Tambah siswa</button>}
-          <button className="ghost" onClick={() => makeCards(filtered.filter((s) => s.active))}>Cetak kartu QR ({filtered.filter((s) => s.active).length})</button>
+          <select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
+            <option value="">Semua kelas</option>
+            {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
         </div>
       </div>
 
-      <div className="card table-wrap">
-        <table>
-          <thead>
-            <tr><th>NIS</th><th>Nama</th><th>Kelas</th><th>Wali</th><th>Wajah</th><th>Aksi</th></tr>
-          </thead>
-          <tbody>
-            {filtered.map((s) => (
-              <tr key={s.id} style={{ opacity: s.active ? 1 : 0.5 }}>
-                <td>{s.nis}</td>
-                <td>{s.full_name}</td>
-                <td>{s.classes?.name || '-'}</td>
-                <td>{s.parent_name || '-'}<div className="muted">{s.parent_phone}</div></td>
-                <td>{(s.face_descriptors || []).length ? <span className="badge b-hadir">Terdaftar</span> : <span className="badge b-alpha">Belum</span>}</td>
-                <td>
-                  <div className="actions">
-                    {isAdmin && <button className="ghost" onClick={() => setEnroll(s)}>Wajah</button>}
-                    <button className="ghost" onClick={() => makeCards([s])}>QR</button>
-                    {isAdmin && <button className="ghost" onClick={() => { setMsg(''); setForm({ ...EMPTY, ...s, class_id: s.class_id || '' }); }}>Ubah</button>}
-                    {isAdmin && (s.face_descriptors || []).length > 0 && <button className="ghost" onClick={() => resetFace(s)}>Hapus wajah</button>}
-                    {isAdmin && <button className="ghost" onClick={() => toggleActive(s)}>{s.active ? 'Nonaktifkan' : 'Aktifkan'}</button>}
-                    {isAdmin && <button className="danger" onClick={() => remove(s)}>Hapus</button>}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!filtered.length && <tr><td colSpan={6} className="muted">Belum ada data.</td></tr>}
-          </tbody>
-        </table>
+      <div className="card">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Siswa</th><th>Kelas</th><th>Wali</th><th>Wajah</th><th style={{ textAlign: 'right' }}>Aksi</th></tr>
+            </thead>
+            <tbody>
+              {filtered.map((s) => (
+                <tr key={s.id} style={{ opacity: s.active ? 1 : 0.5 }}>
+                  <td>
+                    <div className="cell-user">
+                      <Avatar name={s.full_name} />
+                      <div><div style={{ fontWeight: 600 }}>{s.full_name}</div><div className="muted">NIS {s.nis}{!s.active && ' · nonaktif'}</div></div>
+                    </div>
+                  </td>
+                  <td>{s.classes?.name || '-'}</td>
+                  <td>{s.parent_name || '-'}<div className="muted">{s.parent_phone}</div></td>
+                  <td>{(s.face_descriptors || []).length ? <span className="badge b-hadir">Terdaftar</span> : <span className="badge b-alpha">Belum</span>}</td>
+                  <td>
+                    <div className="actions" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+                      {isAdmin && <button className="ghost icon-only" title="Daftarkan wajah" onClick={() => setEnroll(s)}><ScanFace size={16} /></button>}
+                      <button className="ghost icon-only" title="Kartu QR" onClick={() => makeCards([s])}><QrCode size={16} /></button>
+                      {isAdmin && <button className="ghost icon-only" title="Ubah" onClick={() => { setMsg(''); setForm({ ...EMPTY, ...s, class_id: s.class_id || '' }); }}><Pencil size={16} /></button>}
+                      {isAdmin && (s.face_descriptors || []).length > 0 && <button className="ghost icon-only" title="Hapus data wajah" onClick={() => resetFace(s)}><ShieldOff size={16} /></button>}
+                      {isAdmin && <button className="ghost icon-only" title={s.active ? 'Nonaktifkan' : 'Aktifkan'} onClick={() => toggleActive(s)}><Power size={16} /></button>}
+                      {isAdmin && <button className="danger icon-only" title="Hapus siswa" onClick={() => remove(s)}><Trash2 size={16} /></button>}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {!filtered.length && <tr><td colSpan={5} className="empty">Belum ada data.</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {form && (
         <div className="modal-bg" onClick={() => setForm(null)}>
           <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={save}>
-            <h3 style={{ marginTop: 0 }}>{form.id ? 'Ubah siswa' : 'Tambah siswa'}</h3>
+            <div className="modal-head">
+              <h3>{form.id ? 'Ubah siswa' : 'Tambah siswa'}</h3>
+              <button type="button" className="icon-btn" onClick={() => setForm(null)} aria-label="Tutup"><X size={20} /></button>
+            </div>
             <div className="row">
               <div><label>NIS</label><input required value={form.nis} onChange={(e) => setForm({ ...form, nis: e.target.value })} /></div>
               <div><label>Nama lengkap</label><input required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
@@ -168,8 +181,11 @@ export default function StudentsPage() {
               <div><label>No. HP wali (WhatsApp)</label><input value={form.parent_phone || ''} onChange={(e) => setForm({ ...form, parent_phone: e.target.value })} placeholder="08xxxxxxxxxx" /></div>
               <div><label>Email wali</label><input type="email" value={form.parent_email || ''} onChange={(e) => setForm({ ...form, parent_email: e.target.value })} /></div>
             </div>
-            {msg && <p className="err">{msg}</p>}
-            <div className="actions"><button>Simpan</button><button type="button" className="ghost" onClick={() => setForm(null)}>Batal</button></div>
+            {msg && <div className="alert err" style={{ marginBottom: 14 }}>{msg}</div>}
+            <div className="actions" style={{ justifyContent: 'flex-end' }}>
+              <button type="button" className="ghost" onClick={() => setForm(null)}>Batal</button>
+              <button>Simpan</button>
+            </div>
           </form>
         </div>
       )}

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import jsQR from 'jsqr';
+import { ArrowLeft, CheckCircle2, TriangleAlert, XCircle, ScanFace, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { loadFaceApi, startCamera, stopCamera, DETECTOR_OPTS } from '@/lib/face';
 import { notifyParent } from '@/lib/notify';
@@ -194,7 +195,7 @@ export default function KioskPage() {
             <div className="clock">{clock}</div>
             <div style={{ color: '#9fb2c7' }}>{settingsRef.current.school_name}</div>
           </div>
-          <Link href="/" className="btn ghost" style={{ background: '#243750', color: '#fff' }}>Keluar kiosk</Link>
+          <Link href="/" className="btn ghost"><ArrowLeft size={16} /> Keluar kiosk</Link>
         </div>
         <div className="video-box">
           <video ref={videoRef} muted playsInline />
@@ -208,11 +209,12 @@ export default function KioskPage() {
       </div>
       <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
         <div className={`result ${result.kind}`}>
+          {result.kind === 'ok' ? <CheckCircle2 size={46} /> : result.kind === 'warn' ? <TriangleAlert size={46} /> : result.kind === 'bad' ? <XCircle size={46} /> : <ScanFace size={46} />}
           <div style={{ fontWeight: 700, fontSize: 26 }}>{result.text}</div>
           {result.sub && <div style={{ marginTop: 6 }}>{result.sub}</div>}
         </div>
         <div className="panel">
-          <div style={{ marginBottom: 8, color: '#9fb2c7' }}>Sudah presensi: <strong style={{ color: '#fff' }}>{counts.present}</strong> / {counts.total}</div>
+          <div style={{ marginBottom: 8, color: '#9fb2c7', display: 'flex', alignItems: 'center', gap: 8 }}><Users size={17} /> Sudah presensi: <strong style={{ color: '#fff' }}>{counts.present}</strong> / {counts.total}</div>
           <ul className="log">
             {log.map((l, i) => (
               <li key={i}>

@@ -1,6 +1,8 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { Save, Send, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PageHead, Avatar } from '@/components/ui';
 import { notifyParent } from '@/lib/notify';
 import { todayStr, fmtDate, STATUS_LABEL } from '@/lib/utils';
 
@@ -76,8 +78,10 @@ export default function LeavesPage() {
 
   return (
     <>
-      <h2>Izin / Sakit</h2>
+      <PageHead title="Izin / Sakit" sub="Catat siswa yang tidak hadir dengan keterangan" />
       <form className="card" onSubmit={save}>
+        <div className="card-title">Input keterangan</div>
+        <div className="card-sub">Catatan di tanggal yang sama (mis. alpha) akan diganti.</div>
         <div className="row">
           <div>
             <label>Kelas</label>
@@ -104,35 +108,37 @@ export default function LeavesPage() {
             </select>
           </div>
         </div>
-        <div style={{ marginBottom: 12 }}>
+        <div className="field">
           <label>Catatan (opsional)</label>
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Contoh: demam, ada surat dokter" />
         </div>
         <div className="actions">
-          <button disabled={saving}>{saving ? 'Menyimpan…' : 'Simpan'}</button>
-          {msg && <span className={msg.ok ? 'ok' : 'err'}>{msg.text}</span>}
-          {msg?.wa && <a className="btn ghost" style={{ color: 'var(--text)' }} href={msg.wa} target="_blank" rel="noreferrer">Kirim WhatsApp ke wali</a>}
+          <button disabled={saving}><Save size={16} /> {saving ? 'Menyimpan…' : 'Simpan'}</button>
+          {msg && <span className={`alert ${msg.ok ? 'ok' : 'err'}`}>{msg.text}</span>}
+          {msg?.wa && <a className="btn ghost" href={msg.wa} target="_blank" rel="noreferrer"><Send size={16} /> Kirim WhatsApp ke wali</a>}
         </div>
       </form>
 
-      <div className="card table-wrap">
-        <h3 style={{ marginTop: 0 }}>Riwayat terbaru</h3>
+      <div className="card">
+        <div className="card-title" style={{ marginBottom: 14 }}>Riwayat terbaru</div>
+        <div className="table-wrap">
         <table>
-          <thead><tr><th>Tanggal</th><th>Siswa</th><th>Kelas</th><th>Status</th><th>Catatan</th><th></th></tr></thead>
+          <thead><tr><th>Tanggal</th><th>Siswa</th><th>Kelas</th><th>Status</th><th>Catatan</th><th style={{ width: 60 }}></th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
                 <td>{fmtDate(r.date)}</td>
-                <td>{r.students?.full_name}</td>
+                <td><div className="cell-user"><Avatar name={r.students?.full_name} /><span style={{ fontWeight: 600 }}>{r.students?.full_name}</span></div></td>
                 <td>{r.students?.classes?.name || '-'}</td>
                 <td><span className={`badge b-${r.status}`}>{STATUS_LABEL[r.status]}</span></td>
                 <td>{r.note || '-'}</td>
-                <td><button className="ghost" onClick={() => remove(r.id)}>Hapus</button></td>
+                <td><button className="danger icon-only" onClick={() => remove(r.id)} aria-label="Hapus"><Trash2 size={16} /></button></td>
               </tr>
             ))}
-            {!rows.length && <tr><td colSpan={6} className="muted">Belum ada catatan.</td></tr>}
+            {!rows.length && <tr><td colSpan={6} className="empty">Belum ada catatan.</td></tr>}
           </tbody>
         </table>
+        </div>
       </div>
     </>
   );

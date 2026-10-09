@@ -2,23 +2,37 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { LayoutDashboard, ScanFace, FileHeart, FileBarChart, Users, School, LogOut, Menu, ScanLine } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ProfileCtx as Ctx, type Profile } from '@/lib/profile';
+import { Avatar } from '@/components/ui';
 
 const NAV = [
-  { href: '/', label: 'Dashboard' },
-  { href: '/kiosk', label: 'Kiosk Presensi' },
-  { href: '/leaves', label: 'Izin / Sakit' },
-  { href: '/reports', label: 'Rekap & Ekspor' },
-  { href: '/students', label: 'Data Siswa' },
-  { href: '/classes', label: 'Kelas', admin: true },
-];
+  { group: 'Utama' },
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/kiosk', label: 'Kiosk Presensi', icon: ScanFace },
+  { group: 'Kehadiran' },
+  { href: '/leaves', label: 'Izin / Sakit', icon: FileHeart },
+  { href: '/reports', label: 'Rekap & Ekspor', icon: FileBarChart },
+  { group: 'Data Master' },
+  { href: '/students', label: 'Data Siswa', icon: Users },
+  { href: '/classes', label: 'Kelas', icon: School, admin: true },
+] as any[];
+
+const TITLES: Record<string, string> = {
+  '/': 'Dashboard',
+  '/leaves': 'Izin / Sakit',
+  '/reports': 'Rekap & Ekspor',
+  '/students': 'Data Siswa',
+  '/classes': 'Kelas',
+};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const path = usePathname();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'noprofile'>('loading');
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -40,6 +54,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
   }, [router]);
 
+  useEffect(() => setOpen(false), [path]);
+
   async function logout() {
     await supabase.auth.signOut();
     router.replace('/login');
@@ -51,7 +67,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="login">
         <div className="card">
           <p>Akun Anda belum memiliki profil staf. Hubungi admin.</p>
-          <button onClick={logout}>Keluar</button>
+          <button onClick={logout}><LogOut size={16} /> Keluar</button>
         </div>
       </div>
     );
@@ -62,18 +78,45 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <Ctx.Provider value={{ profile }}>
       <div className="shell">
-        <aside className="side">
-          <h1>Presensi Sekolah</h1>
-          {NAV.filter((n) => !n.admin || profile?.role === 'admin').map((n) => (
-            <Link key={n.href} href={n.href} className={path === n.href ? 'active' : ''}>
-              {n.label}
-            </Link>
-          ))}
-          <div className="spacer" />
-          <div className="who">{profile?.full_name} ({profile?.role})</div>
-          <a href="#" onClick={(e) => { e.preventDefault(); logout(); }}>Keluar</a>
+        <div className={`scrim ${open ? 'open' : ''}`} onClick={() => setOpen(false)} />
+        <aside className={`sidebar ${open ? 'open' : ''}`}>
+          <div className="brand">
+            <div className="brand-logo"><ScanLine size={20} /></div>
+            Presensi
+          </div>
+          <nav className="nav">
+            {NAV.filter((n) => !n.admin || profile?.role === 'admin').map((n, i) =>
+              n.group ? (
+                <div key={i} className="nav-group">{n.group}</div>
+              ) : (
+                <Link key={n.href} href={n.href} className={path === n.href ? 'active' : ''}>
+                  <n.icon size={19} />
+                  {n.label}
+                </Link>
+              )
+            )}
+          </nav>
+          <div className="side-foot">
+            <button className="ghost" style={{ width: '100%' }} onClick={logout}><LogOut size={16} /> Keluar</button>
+          </div>
         </aside>
-        <main className="main">{children}</main>
+
+        <div className="content">
+          <header className="topbar no-print">
+            <div className="left">
+              <button className="icon-btn menu-btn" onClick={() => setOpen(true)} aria-label="Menu"><Menu size={22} /></button>
+              <strong style={{ fontSize: 16 }}>{TITLES[path] || 'Presensi Sekolah'}</strong>
+            </div>
+            <div className="user-chip">
+              <div className="who" style={{ textAlign: 'right' }}>
+                <div className="name">{profile?.full_name}</div>
+                <div className="role">{profile?.role === 'admin' ? 'Administrator' : 'Guru'}</div>
+              </div>
+              <Avatar name={profile?.full_name} />
+            </div>
+          </header>
+          <main className="main">{children}</main>
+        </div>
       </div>
     </Ctx.Provider>
   );

@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { Search, ListFilter, FileSpreadsheet, Printer, Rows3 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PageHead } from '@/components/ui';
 import { todayStr, fmtDate, fmtTime, STATUS_LABEL } from '@/lib/utils';
 
 function firstOfMonth() {
@@ -84,7 +86,7 @@ export default function ReportsPage() {
 
   return (
     <>
-      <h2>Rekap & Ekspor</h2>
+      <PageHead title="Rekap & Ekspor" sub="Laporan kehadiran per periode dan kelas" />
       <div className="card no-print">
         <div className="row">
           <div><label>Dari</label><input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
@@ -98,23 +100,24 @@ export default function ReportsPage() {
           </div>
         </div>
         <div className="actions">
-          <button onClick={load} disabled={loading}>{loading ? 'Memuat…' : 'Tampilkan'}</button>
-          <button className="ghost" onClick={() => setView(view === 'rekap' ? 'detail' : 'rekap')}>Lihat {view === 'rekap' ? 'detail harian' : 'rekap per siswa'}</button>
-          <button className="ghost" onClick={exportXlsx} disabled={!rows.length}>Ekspor Excel</button>
-          <button className="ghost" onClick={() => window.print()} disabled={!rows.length}>Cetak / PDF</button>
+          <button onClick={load} disabled={loading}><Search size={16} /> {loading ? 'Memuat…' : 'Tampilkan'}</button>
+          <button className="ghost" onClick={() => setView(view === 'rekap' ? 'detail' : 'rekap')}>{view === 'rekap' ? <Rows3 size={16} /> : <ListFilter size={16} />} {view === 'rekap' ? 'Detail harian' : 'Rekap per siswa'}</button>
+          <button className="ghost" onClick={exportXlsx} disabled={!rows.length}><FileSpreadsheet size={16} /> Ekspor Excel</button>
+          <button className="ghost" onClick={() => window.print()} disabled={!rows.length}><Printer size={16} /> Cetak / PDF</button>
         </div>
       </div>
 
       <div className="card table-wrap">
-        <p className="muted">Periode {fmtDate(from)} – {fmtDate(to)} · {rows.length} catatan</p>
+        <div className="card-title">{view === 'rekap' ? 'Rekap per siswa' : 'Detail harian'}</div>
+        <div className="card-sub">Periode {fmtDate(from)} – {fmtDate(to)} · {rows.length} catatan</div>
         {view === 'rekap' ? (
           <table>
             <thead><tr><th>NIS</th><th>Nama</th><th>Kelas</th><th>Hadir</th><th>Terlambat</th><th>Izin</th><th>Sakit</th><th>Alpha</th></tr></thead>
             <tbody>
               {summary.map((s) => (
-                <tr key={s.nis}><td>{s.nis}</td><td>{s.nama}</td><td>{s.kelas}</td><td>{s.hadir}</td><td>{s.terlambat}</td><td>{s.izin}</td><td>{s.sakit}</td><td>{s.alpha}</td></tr>
+                <tr key={s.nis}><td>{s.nis}</td><td style={{ fontWeight: 600 }}>{s.nama}</td><td>{s.kelas}</td><td>{s.hadir}</td><td>{s.terlambat}</td><td>{s.izin}</td><td>{s.sakit}</td><td>{s.alpha}</td></tr>
               ))}
-              {!summary.length && <tr><td colSpan={8} className="muted">Tidak ada data pada periode ini.</td></tr>}
+              {!summary.length && <tr><td colSpan={8} className="empty">Tidak ada data pada periode ini.</td></tr>}
             </tbody>
           </table>
         ) : (
@@ -128,7 +131,7 @@ export default function ReportsPage() {
                   <td>{fmtTime(r.check_in)}</td><td>{r.method}</td><td>{r.note || ''}</td>
                 </tr>
               ))}
-              {!rows.length && <tr><td colSpan={7} className="muted">Tidak ada data pada periode ini.</td></tr>}
+              {!rows.length && <tr><td colSpan={7} className="empty">Tidak ada data pada periode ini.</td></tr>}
             </tbody>
           </table>
         )}

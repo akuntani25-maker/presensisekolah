@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { Camera, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { loadFaceApi, startCamera, stopCamera, DETECTOR_OPTS } from '@/lib/face';
 
@@ -73,13 +74,19 @@ export default function FaceEnroll({ student, onClose, onSaved }: { student: any
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginTop: 0 }}>Daftarkan wajah: {student.full_name}</h3>
+        <div className="modal-head">
+          <div>
+            <h3>Daftarkan wajah</h3>
+            <div className="muted">{student.full_name} · NIS {student.nis}</div>
+          </div>
+          <button className="icon-btn" onClick={onClose} aria-label="Tutup"><X size={20} /></button>
+        </div>
         <div className="video-box"><video ref={videoRef} muted playsInline /></div>
-        <p className="muted">{status}</p>
-        {err && <p className="err">{err}</p>}
-        <div className="actions">
-          <button onClick={capture} disabled={!ready || busy}>{busy ? 'Memproses…' : 'Ambil sampel wajah'}</button>
+        <p className="muted" style={{ margin: '12px 0' }}>{status}</p>
+        {err && <div className="alert err" style={{ marginBottom: 12 }}>{err}</div>}
+        <div className="actions" style={{ justifyContent: 'flex-end' }}>
           <button className="ghost" onClick={onClose}>Tutup</button>
+          <button onClick={capture} disabled={!ready || busy}><Camera size={16} /> {busy ? 'Memproses…' : 'Ambil sampel wajah'}</button>
         </div>
       </div>
     </div>

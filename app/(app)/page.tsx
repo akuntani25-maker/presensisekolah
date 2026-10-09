@@ -1,9 +1,11 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Users, UserCheck, Clock, HeartPulse, UserX, UserMinus, ScanFace, CalendarX2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { todayStr, fmtTime, STATUS_LABEL } from '@/lib/utils';
 import { notifyParent } from '@/lib/notify';
+import { StatCard, PageHead, Avatar } from '@/components/ui';
 
 export default function Dashboard() {
   const [date] = useState(todayStr());
@@ -44,41 +46,58 @@ export default function Dashboard() {
     load();
   }
 
+  const longDate = new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
     <>
-      <h2>Dashboard — {new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h2>
-      <div className="grid cols4" style={{ marginBottom: 18 }}>
-        <div className="card stat">{totalStudents}<small>Siswa aktif</small></div>
-        <div className="card stat" style={{ color: 'var(--ok)' }}>{count('hadir')}<small>Hadir</small></div>
-        <div className="card stat" style={{ color: 'var(--warn)' }}>{count('terlambat')}<small>Terlambat</small></div>
-        <div className="card stat" style={{ color: 'var(--primary-dark)' }}>{count('izin') + count('sakit')}<small>Izin / Sakit</small></div>
-        <div className="card stat" style={{ color: 'var(--bad)' }}>{count('alpha')}<small>Alpha</small></div>
-        <div className="card stat">{missing.length}<small>Belum presensi</small></div>
+      <PageHead title="Dashboard" sub={longDate}>
+        <Link href="/kiosk" className="btn"><ScanFace size={17} /> Buka kiosk presensi</Link>
+      </PageHead>
+
+      <div className="grid cols4" style={{ marginBottom: 22 }}>
+        <StatCard icon={Users} label="Siswa aktif" value={totalStudents} tone="primary" />
+        <StatCard icon={UserCheck} label="Hadir" value={count('hadir')} tone="success" />
+        <StatCard icon={Clock} label="Terlambat" value={count('terlambat')} tone="warning" />
+        <StatCard icon={HeartPulse} label="Izin / Sakit" value={count('izin') + count('sakit')} tone="info" />
+        <StatCard icon={UserX} label="Alpha" value={count('alpha')} tone="danger" />
+        <StatCard icon={UserMinus} label="Belum presensi" value={missing.length} tone="muted" />
       </div>
 
-      <div className="card actions">
-        <Link href="/kiosk" className="btn">Buka kiosk presensi</Link>
-        <button className="ghost" disabled={busy || !missing.length} onClick={markAlpha}>Tandai belum presensi sebagai alpha</button>
-        {msg && <span className="muted">{msg}</span>}
+      <div className="card">
+        <div className="actions" style={{ justifyContent: 'space-between' }}>
+          <div>
+            <div className="card-title">Penutupan presensi harian</div>
+            <div className="muted">Setelah jam presensi berakhir, tandai siswa yang belum presensi sebagai alpha.</div>
+          </div>
+          <div className="actions">
+            {msg && <span className="muted">{msg}</span>}
+            <button className="ghost" disabled={busy || !missing.length} onClick={markAlpha}>
+              <CalendarX2 size={16} /> Tandai alpha ({missing.length})
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="card table-wrap">
-        <h3 style={{ marginTop: 0 }}>Catatan hari ini</h3>
-        <table>
-          <thead><tr><th>Jam</th><th>Nama</th><th>Kelas</th><th>Status</th><th>Cara</th></tr></thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td>{fmtTime(r.check_in)}</td>
-                <td>{r.students?.full_name}</td>
-                <td>{r.students?.classes?.name || '-'}</td>
-                <td><span className={`badge b-${r.status}`}>{STATUS_LABEL[r.status]}</span></td>
-                <td>{r.method === 'face' ? 'Wajah' : r.method === 'qr' ? 'QR' : 'Manual'}</td>
-              </tr>
-            ))}
-            {!rows.length && <tr><td colSpan={5} className="muted">Belum ada presensi hari ini.</td></tr>}
-          </tbody>
-        </table>
+      <div className="card">
+        <div className="card-title">Catatan hari ini</div>
+        <div className="card-sub">{rows.length} catatan presensi tercatat</div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Siswa</th><th>Kelas</th><th>Jam</th><th>Status</th><th>Cara</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td><div className="cell-user"><Avatar name={r.students?.full_name} /><div><div style={{ fontWeight: 600 }}>{r.students?.full_name}</div><div className="muted">NIS {r.students?.nis}</div></div></div></td>
+                  <td>{r.students?.classes?.name || '-'}</td>
+                  <td>{fmtTime(r.check_in)}</td>
+                  <td><span className={`badge b-${r.status}`}>{STATUS_LABEL[r.status]}</span></td>
+                  <td>{r.method === 'face' ? 'Wajah' : r.method === 'qr' ? 'QR' : 'Manual'}</td>
+                </tr>
+              ))}
+              {!rows.length && <tr><td colSpan={5} className="empty">Belum ada presensi hari ini.</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );

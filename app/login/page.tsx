@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ScanLine, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
@@ -23,18 +24,30 @@ export default function LoginPage() {
   return (
     <div className="login">
       <form className="card" onSubmit={onSubmit}>
-        <h2 style={{ marginTop: 0 }}>Presensi Sekolah</h2>
-        <p className="muted">Masuk sebagai admin atau guru.</p>
-        <div style={{ marginBottom: 12 }}>
+        <div className="brand">
+          <div className="brand-logo"><ScanLine size={20} /></div>
+          Presensi Sekolah
+        </div>
+        <h2 style={{ fontSize: 20 }}>Selamat datang</h2>
+        <p className="muted" style={{ margin: '4px 0 22px' }}>Masuk sebagai admin atau guru untuk melanjutkan.</p>
+        <div className="field">
           <label>Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="username" />
+          <div className="input-icon">
+            <Mail size={17} />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="username" placeholder="nama@sekolah.sch.id" />
+          </div>
         </div>
-        <div style={{ marginBottom: 14 }}>
+        <div className="field">
           <label>Kata sandi</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+          <div className="input-icon">
+            <Lock size={17} />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" placeholder="••••••••" />
+          </div>
         </div>
-        {err && <p className="err">{err}</p>}
-        <button disabled={loading} style={{ width: '100%' }}>{loading ? 'Memproses…' : 'Masuk'}</button>
+        {err && <div className="alert err" style={{ marginBottom: 14 }}><AlertCircle size={16} /> {err}</div>}
+        <button disabled={loading} style={{ width: '100%', padding: 12 }}>
+          <LogIn size={17} /> {loading ? 'Memproses…' : 'Masuk'}
+        </button>
       </form>
     </div>
   );
