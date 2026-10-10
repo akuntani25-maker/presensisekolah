@@ -1,4 +1,7 @@
+'use client';
 import type { LucideIcon } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/lib/theme';
 
 export type Tone = 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'muted';
 
@@ -34,4 +37,21 @@ export function initials(name?: string | null) {
 
 export function Avatar({ name }: { name?: string | null }) {
   return <div className="avatar">{initials(name)}</div>;
+}
+
+/** Tombol beralih tema terang / gelap. */
+export function ThemeToggle() {
+  const [theme, setTheme] = useTheme();
+  const next = theme === 'dark' ? 'light' : 'dark';
+  return (
+    <button
+      type="button"
+      className="icon-btn"
+      onClick={() => setTheme(next)}
+      aria-label={theme === 'dark' ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
+      title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+    >
+      {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+    </button>
+  );
 }

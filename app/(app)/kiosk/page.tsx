@@ -18,6 +18,7 @@ export default function KioskPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const studentsRef = useRef<any[]>([]);
+  const classesRef = useRef<Map<string, { late_after: string | null; start_time: string | null }>>(new Map());
   const matcherRef = useRef<any>(null);
   const faceapiRef = useRef<any>(null);
   const settingsRef = useRef<any>({ late_after: '07:15:00', timezone: 'Asia/Makassar', school_name: '' });
@@ -56,7 +57,10 @@ export default function KioskPage() {
       const cfg = settingsRef.current;
       const date = todayStr(new Date(), cfg.timezone);
       const time = timeStr(new Date(), cfg.timezone);
-      const status = time > cfg.late_after ? 'terlambat' : 'hadir';
+      // Pakai batas terlambat milik kelas siswa; jika kelas tidak punya, pakai global
+      const classLate = student.class_id ? classesRef.current.get(student.class_id)?.late_after : null;
+      const threshold = classLate || cfg.late_after;
+      const status = time > threshold ? 'terlambat' : 'hadir';
 
       const { error } = await supabase
         .from('attendance')
@@ -91,12 +95,14 @@ export default function KioskPage() {
         const faceapi = await loadFaceApi();
         faceapiRef.current = faceapi;
 
-        const [{ data: cfg }, { data: studs }] = await Promise.all([
+        const [{ data: cfg }, { data: studs }, { data: cls }] = await Promise.all([
           supabase.from('settings').select('*').eq('id', 1).maybeSingle(),
-          supabase.from('students').select('id, nis, full_name, qr_code, face_descriptors').eq('active', true),
+          supabase.from('students').select('id, nis, full_name, qr_code, face_descriptors, class_id').eq('active', true),
+          supabase.from('classes').select('id, late_after, start_time'),
         ]);
         if (cfg) settingsRef.current = cfg;
         studentsRef.current = studs || [];
+        classesRef.current = new Map((cls || []).map((c: any) => [c.id, { late_after: c.late_after, start_time: c.start_time }]));
 
         const labeled = (studs || [])
           .filter((s: any) => Array.isArray(s.face_descriptors) && s.face_descriptors.length)

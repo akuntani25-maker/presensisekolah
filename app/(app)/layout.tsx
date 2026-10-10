@@ -2,10 +2,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ScanFace, FileHeart, FileBarChart, Users, School, LogOut, Menu, ScanLine } from 'lucide-react';
+import { LayoutDashboard, ScanFace, FileHeart, FileBarChart, Users, School, LogOut, Menu, ScanLine, Settings } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ProfileCtx as Ctx, type Profile } from '@/lib/profile';
-import { Avatar } from '@/components/ui';
+import { Avatar, ThemeToggle } from '@/components/ui';
 
 const NAV = [
   { group: 'Utama' },
@@ -17,6 +17,8 @@ const NAV = [
   { group: 'Data Master' },
   { href: '/students', label: 'Data Siswa', icon: Users },
   { href: '/classes', label: 'Kelas', icon: School, admin: true },
+  { group: 'Sistem', admin: true },
+  { href: '/settings', label: 'Pengaturan', icon: Settings, admin: true },
 ] as any[];
 
 const TITLES: Record<string, string> = {
@@ -25,6 +27,7 @@ const TITLES: Record<string, string> = {
   '/reports': 'Rekap & Ekspor',
   '/students': 'Data Siswa',
   '/classes': 'Kelas',
+  '/settings': 'Pengaturan',
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -108,6 +111,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <strong style={{ fontSize: 16 }}>{TITLES[path] || 'Presensi Sekolah'}</strong>
             </div>
             <div className="user-chip">
+              <ThemeToggle />
               <div className="who" style={{ textAlign: 'right' }}>
                 <div className="name">{profile?.full_name}</div>
                 <div className="role">{profile?.role === 'admin' ? 'Administrator' : 'Guru'}</div>

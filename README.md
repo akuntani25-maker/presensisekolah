@@ -11,6 +11,7 @@ Next.js 15 · Supabase (database + login) · Vercel (hosting) · face-api.js (pe
 ## 1. Siapkan Supabase
 1. Buat project di https://supabase.com.
 2. SQL Editor → tempel isi `supabase/schema.sql` → Run.
+   Jika Anda sudah pernah menjalankan skema sebelumnya, cukup jalankan **migrasi tambahan** di `supabase/migration-01-class-times.sql` (menambah kolom jam pada tabel kelas).
 3. **Authentication → Sign In / Providers → Email**: matikan **Allow new users to sign up** (penting! Setiap akun yang terdaftar bisa membaca data siswa).
 4. **Authentication → Users → Add user**: buat akun admin dan akun guru (centang auto-confirm).
 5. Jadikan akun pertama admin (SQL Editor):
@@ -42,11 +43,21 @@ Kamera di browser hanya jalan di `https://` atau `localhost`.
 3. Deploy. Model wajah disalin saat `npm install` (postinstall), jadi tidak perlu langkah tambahan.
 
 ## Alur penggunaan
-1. Admin: **Kelas** → tambah kelas → **Data Siswa** → tambah siswa (isi no. HP/email wali).
-2. Klik **Wajah** pada siswa, minta siswa menghadap kamera, tekan *Ambil sampel wajah*.
-3. **Cetak kartu QR** dan bagikan ke siswa sebagai cadangan.
-4. Login di tablet kiosk, buka `/kiosk`, tekan F11 / mode layar penuh.
-5. Akhir jam presensi: Dashboard → *Tandai belum presensi sebagai alpha*.
+1. Admin: **Kelas** → tambah kelas, isi **jam masuk** dan **batas terlambat** per kelas.
+   Contoh untuk sesi pagi vs siang:
+   - *X IPA 1 Pagi* → jam masuk 07:00, batas terlambat 07:15
+   - *X IPA 1 Siang* → jam masuk 13:00, batas terlambat 13:15
+   Kelas yang jamnya dikosongkan akan ikut pengaturan global (`settings.late_after`).
+2. **Data Siswa** → tambah siswa (isi no. HP/email wali).
+3. Klik **Wajah** pada siswa, minta siswa menghadap kamera, tekan *Ambil sampel wajah*.
+4. **Cetak kartu QR** dan bagikan ke siswa sebagai cadangan.
+5. Login di tablet kiosk, buka `/kiosk`, tekan F11 / mode layar penuh.
+   Kiosk otomatis memakai batas terlambat sesuai kelas siswa yang sedang scan.
+6. Akhir jam presensi: Dashboard → *Tandai belum presensi sebagai alpha*.
+
+## Mode gelap
+Tombol bulan/matahari di topbar untuk beralih antara mode terang dan gelap.
+Pilihan tersimpan di browser masing-masing pengguna; kalau belum pernah dipilih, aplikasi mengikuti preferensi sistem.
 
 ## Soal fingerprint
 Browser tidak bisa membaca mesin fingerprint sekolah. Untuk web, pengganti yang realistis adalah **kartu QR** (sudah ada). Jika kelak ingin fingerprint, perlu mesin yang punya API/webhook (mis. ZKTeco/Solution) lalu datanya disinkronkan ke tabel `attendance`.
