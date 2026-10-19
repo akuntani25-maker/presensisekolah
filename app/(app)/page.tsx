@@ -51,7 +51,7 @@ export default function Dashboard() {
   return (
     <>
       <PageHead title="Dashboard" sub={longDate}>
-        <Link href="/kiosk" className="btn"><ScanFace size={17} /> Buka kiosk presensi</Link>
+        <Link href="/kiosk" className="btn"><ScanFace size={17} /> Buka presensi</Link>
       </PageHead>
 
       <div className="grid cols4" style={{ marginBottom: 22 }}>
