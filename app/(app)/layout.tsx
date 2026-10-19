@@ -10,7 +10,7 @@ import { Avatar, ThemeToggle } from '@/components/ui';
 const NAV = [
   { group: 'Utama' },
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/kiosk', label: 'Kiosk Presensi', icon: ScanFace },
+  { href: '/kiosk', label: 'Presensi', icon: ScanFace },
   { group: 'Kehadiran' },
   { href: '/leaves', label: 'Izin / Sakit', icon: FileHeart },
   { href: '/reports', label: 'Rekap & Ekspor', icon: FileBarChart },
