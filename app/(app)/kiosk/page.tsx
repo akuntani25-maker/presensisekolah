@@ -2,11 +2,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import jsQR from 'jsqr';
-import { ArrowLeft, CheckCircle2, TriangleAlert, XCircle, ScanFace, Users } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, TriangleAlert, XCircle, ScanFace, Users, CalendarOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { loadFaceApi, startCamera, stopCamera, DETECTOR_OPTS } from '@/lib/face';
 import { notifyParent } from '@/lib/notify';
 import { todayStr, timeStr } from '@/lib/utils';
+import { canvasToJpegBlob, uploadSnapshot } from '@/lib/snapshots';
 
 type Result = { kind: 'idle' | 'ok' | 'warn' | 'bad'; text: string; sub?: string };
 const MATCH_THRESHOLD = 0.5; // makin kecil makin ketat
@@ -28,8 +29,9 @@ export default function KioskPage() {
   const busyRef = useRef(false);
   const stopRef = useRef(false);
   const resetTimer = useRef<any>(null);
+  const holidayRef = useRef<{ name: string } | null>(null);
 
-  const [phase, setPhase] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'ready' | 'error' | 'holiday'>('loading');
   const [errMsg, setErrMsg] = useState('');
   const [result, setResult] = useState<Result>({ kind: 'idle', text: 'Hadapkan wajah ke kamera atau tunjukkan kartu QR' });
   const [log, setLog] = useState<{ name: string; time: string; status: string; method: string }[]>([]);
@@ -57,18 +59,19 @@ export default function KioskPage() {
       const cfg = settingsRef.current;
       const date = todayStr(new Date(), cfg.timezone);
       const time = timeStr(new Date(), cfg.timezone);
-      // Pakai batas terlambat milik kelas siswa; jika kelas tidak punya, pakai global
       const classLate = student.class_id ? classesRef.current.get(student.class_id)?.late_after : null;
       const threshold = classLate || cfg.late_after;
       const status = time > threshold ? 'terlambat' : 'hadir';
 
-      const { error } = await supabase
+      // Simpan presensi dan dapatkan ID untuk nama file snapshot
+      const { data: inserted, error } = await supabase
         .from('attendance')
-        .insert({ student_id: student.id, date, check_in: new Date().toISOString(), status, method });
+        .insert({ student_id: student.id, date, check_in: new Date().toISOString(), status, method })
+        .select('id')
+        .single();
 
       if (error) {
         if (error.code === '23505') {
-          // sudah ada catatan (misal izin/sakit atau presensi dari kiosk lain)
           doneRef.current.add(student.id);
           return show({ kind: 'warn', text: student.full_name, sub: 'Sudah tercatat hari ini' });
         }
@@ -82,6 +85,17 @@ export default function KioskPage() {
         text: student.full_name,
         sub: status === 'hadir' ? `Presensi berhasil · ${time.slice(0, 5)}` : `Terlambat · ${time.slice(0, 5)}`,
       });
+
+      // Simpan foto bukti presensi (dikompres, tidak menghambat alur)
+      (async () => {
+        try {
+          const blob = await canvasToJpegBlob(canvasRef.current!, 480, 0.6);
+          if (!blob || !inserted?.id) return;
+          const path = await uploadSnapshot(inserted.id, blob, date);
+          if (path) await supabase.from('attendance').update({ snapshot_path: path }).eq('id', inserted.id);
+        } catch { /* lewati galat upload */ }
+      })();
+
       notifyParent({ student_id: student.id, status, time: time.slice(0, 5) });
     },
     [show]
@@ -104,6 +118,15 @@ export default function KioskPage() {
         studentsRef.current = studs || [];
         classesRef.current = new Map((cls || []).map((c: any) => [c.id, { late_after: c.late_after, start_time: c.start_time }]));
 
+        // Cek hari libur
+        const date = todayStr(new Date(), settingsRef.current.timezone);
+        const { data: hol } = await supabase.from('holidays').select('name').eq('date', date).maybeSingle();
+        if (hol) {
+          holidayRef.current = hol as any;
+          setPhase('holiday');
+          return;
+        }
+
         const labeled = (studs || [])
           .filter((s: any) => Array.isArray(s.face_descriptors) && s.face_descriptors.length)
           .map(
@@ -115,7 +138,6 @@ export default function KioskPage() {
           );
         matcherRef.current = labeled.length ? new faceapi.FaceMatcher(labeled, MATCH_THRESHOLD) : null;
 
-        const date = todayStr(new Date(), settingsRef.current.timezone);
         const { data: att } = await supabase.from('attendance').select('student_id').eq('date', date);
         doneRef.current = new Set((att || []).map((a: any) => a.student_id));
         setCounts({ present: doneRef.current.size, total: (studs || []).length });
@@ -146,7 +168,6 @@ export default function KioskPage() {
     if (video && video.readyState >= 2 && !busyRef.current) {
       busyRef.current = true;
       try {
-        // 1) QR dari bingkai yang sama
         const canvas = canvasRef.current!;
         const w = video.videoWidth, h = video.videoHeight;
         if (w && h) {
@@ -161,7 +182,6 @@ export default function KioskPage() {
           }
         }
 
-        // 2) Wajah
         const faceapi = faceapiRef.current;
         if (faceapi && matcherRef.current) {
           const det = await faceapi
@@ -192,6 +212,19 @@ export default function KioskPage() {
     }
     setTimeout(loop, 350);
   }
+
+  if (phase === 'holiday')
+    return (
+      <div className="kiosk" style={{ gridTemplateColumns: '1fr', placeContent: 'center', textAlign: 'center' }}>
+        <div>
+          <CalendarOff size={80} style={{ margin: '0 auto 20px', color: '#9fb2c7' }} />
+          <div className="clock">Hari Libur</div>
+          <p style={{ fontSize: 20, color: '#9fb2c7', marginTop: 8 }}>{holidayRef.current?.name}</p>
+          <p style={{ color: '#9fb2c7' }}>Tidak ada presensi hari ini.</p>
+          <Link href="/" className="btn ghost" style={{ marginTop: 18, display: 'inline-flex' }}><ArrowLeft size={16} /> Keluar kiosk</Link>
+        </div>
+      </div>
+    );
 
   return (
     <div className="kiosk">

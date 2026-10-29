@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Users, UserCheck, Clock, HeartPulse, UserX, UserMinus, ScanFace, CalendarX2 } from 'lucide-react';
+import { Users, UserCheck, Clock, HeartPulse, UserX, UserMinus, ScanFace, CalendarX2, CalendarOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { todayStr, fmtTime, STATUS_LABEL } from '@/lib/utils';
 import { notifyParent } from '@/lib/notify';
@@ -12,18 +12,21 @@ export default function Dashboard() {
   const [rows, setRows] = useState<any[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
   const [missing, setMissing] = useState<any[]>([]);
+  const [holiday, setHoliday] = useState<{ name: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
   const load = useCallback(async () => {
-    const [att, studs] = await Promise.all([
+    const [att, studs, hol] = await Promise.all([
       supabase.from('attendance').select('*, students(full_name, nis, classes(name))').eq('date', date).order('check_in', { ascending: false }),
       supabase.from('students').select('id, full_name, nis, classes(name)').eq('active', true),
+      supabase.from('holidays').select('name').eq('date', date).maybeSingle(),
     ]);
     const a = att.data || [];
     const s = studs.data || [];
     setRows(a);
     setTotalStudents(s.length);
+    setHoliday((hol.data as any) || null);
     const done = new Set(a.map((x: any) => x.student_id));
     setMissing(s.filter((x: any) => !done.has(x.id)));
   }, [date]);
@@ -51,8 +54,18 @@ export default function Dashboard() {
   return (
     <>
       <PageHead title="Dashboard" sub={longDate}>
-        <Link href="/kiosk" className="btn"><ScanFace size={17} /> Buka presensi</Link>
+        <Link href="/kiosk" className="btn"><ScanFace size={17} /> Buka kiosk presensi</Link>
       </PageHead>
+
+      {holiday && (
+        <div className="card" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div className="stat-icon tone-warning" style={{ width: 48, height: 48, borderRadius: 10 }}><CalendarOff size={22} /></div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>Hari libur — {holiday.name}</div>
+            <div className="muted">Tidak ada presensi hari ini. Kiosk juga menolak scan pada tanggal libur.</div>
+          </div>
+        </div>
+      )}
 
       <div className="grid cols4" style={{ marginBottom: 22 }}>
         <StatCard icon={Users} label="Siswa aktif" value={totalStudents} tone="primary" />
@@ -71,7 +84,7 @@ export default function Dashboard() {
           </div>
           <div className="actions">
             {msg && <span className="muted">{msg}</span>}
-            <button className="ghost" disabled={busy || !missing.length} onClick={markAlpha}>
+            <button className="ghost" disabled={busy || !missing.length || !!holiday} onClick={markAlpha}>
               <CalendarX2 size={16} /> Tandai alpha ({missing.length})
             </button>
           </div>

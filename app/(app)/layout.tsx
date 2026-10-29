@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ScanFace, FileHeart, FileBarChart, Users, School, LogOut, Menu, ScanLine, Settings } from 'lucide-react';
+import { LayoutDashboard, ScanFace, FileHeart, FileBarChart, Users, School, LogOut, Menu, ScanLine, Settings, ClipboardCheck, CalendarOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ProfileCtx as Ctx, type Profile } from '@/lib/profile';
 import { Avatar, ThemeToggle } from '@/components/ui';
@@ -10,23 +10,27 @@ import { Avatar, ThemeToggle } from '@/components/ui';
 const NAV = [
   { group: 'Utama' },
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/kiosk', label: 'Presensi', icon: ScanFace },
+  { href: '/kiosk', label: 'Kiosk Presensi', icon: ScanFace },
   { group: 'Kehadiran' },
+  { href: '/attendance', label: 'Presensi Manual', icon: ClipboardCheck },
   { href: '/leaves', label: 'Izin / Sakit', icon: FileHeart },
   { href: '/reports', label: 'Rekap & Ekspor', icon: FileBarChart },
   { group: 'Data Master' },
   { href: '/students', label: 'Data Siswa', icon: Users },
   { href: '/classes', label: 'Kelas', icon: School, admin: true },
+  { href: '/holidays', label: 'Hari Libur', icon: CalendarOff, admin: true },
   { group: 'Sistem', admin: true },
   { href: '/settings', label: 'Pengaturan', icon: Settings, admin: true },
 ] as any[];
 
 const TITLES: Record<string, string> = {
   '/': 'Dashboard',
+  '/attendance': 'Presensi Manual',
   '/leaves': 'Izin / Sakit',
   '/reports': 'Rekap & Ekspor',
   '/students': 'Data Siswa',
   '/classes': 'Kelas',
+  '/holidays': 'Hari Libur',
   '/settings': 'Pengaturan',
 };
 

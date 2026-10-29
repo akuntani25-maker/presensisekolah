@@ -11,7 +11,9 @@ Next.js 15 · Supabase (database + login) · Vercel (hosting) · face-api.js (pe
 ## 1. Siapkan Supabase
 1. Buat project di https://supabase.com.
 2. SQL Editor → tempel isi `supabase/schema.sql` → Run.
-   Jika Anda sudah pernah menjalankan skema sebelumnya, cukup jalankan **migrasi tambahan** di `supabase/migration-01-class-times.sql` (menambah kolom jam pada tabel kelas).
+   Jika Anda sudah pernah menjalankan skema sebelumnya, jalankan migrasi berurutan:
+   - `supabase/migration-01-class-times.sql` — jam masuk & batas terlambat per kelas
+   - `supabase/migration-02-snapshots-holidays.sql` — foto bukti presensi, hari libur, Storage bucket
 3. **Authentication → Sign In / Providers → Email**: matikan **Allow new users to sign up** (penting! Setiap akun yang terdaftar bisa membaca data siswa).
 4. **Authentication → Users → Add user**: buat akun admin dan akun guru (centang auto-confirm).
 5. Jadikan akun pertama admin (SQL Editor):
